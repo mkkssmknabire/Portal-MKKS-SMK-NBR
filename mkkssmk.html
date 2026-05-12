@@ -78,7 +78,7 @@
             { id: "smkskristenanakpanah", name: "SMKS Kristen Anak Panah", address: "Kalibobo (Jl. Christina Marta Tiahahu)", map: "https://maps.google.com/?q=SMK+Kristen+Anak+Panah+Nabire", img: "https://iili.io/BDg7NVf.png", majors: ["Rekayasa Perangkat Lunak (RPL)", "Desain Komunikasi Visual (DKV)", "Perhotelan (Hospitality)"] },
             { id: "smksanigou", name: "SMKS Anigou Kesehatan", address: "Kalibobo (Jl. Mandala)", map: "https://maps.google.com/?q=SMK+Anigou+Nabire", img: "https://iili.io/BiVnT0u.md.png", majors: ["Keperawatan Medis", "Keperawatan Sosial", "Farmasi Klinis", "Kebidanan"] },
             { id: "smksypknomensen", name: "SMKS YPK DR.Nomensen ST. Mambraku", address: "Kalibobo (Jl. Wambarek Putaran II)", map: "https://maps.google.com/?q=SMK+YPK+Nommensen+Nabire", img: "https://iili.io/BDg74Du.md.jpg", majors: ["Teknik Geologi Pertambangan (GP)", "Teknik komputer Dan jaringan (TKJ)", "Teknik Energi Terbarukan"] },
-            { id: "smksasysyafi'iyah", name: "SMKS Asy Syafi’iyah", address: "Sp3 Wadio (Jl. Kakak Tua)", map: "https://maps.google.com/?q=SMK+Asy+Syafiiyah+Nabire", img: "https://iili.io/BiF2zCb.md.jpg", majors: ["Desain Pemodelan dan informasi bangunan (DPIB)", "Teknik Kendaraan Ringan Otomotif (TKR)"] },
+            { id: "smksasysyafiiyah", name: "SMKS Asy Syafi’iyah", address: "Sp3 Wadio (Jl. Kakak Tua)", map: "https://maps.google.com/?q=SMK+Asy+Syafiiyah+Nabire", img: "https://iili.io/BiF2zCb.md.jpg", majors: ["Desain Pemodelan dan informasi bangunan (DPIB)", "Teknik Kendaraan Ringan Otomotif (TKR)"] },
             { id: "smksalmadinah", name: "SMKS AL - Madinah", address: "Girimulyo (Jl.Ksatrian)", map: "https://maps.google.com/?q=SMK+Al-Madinah+Nabire", img: "https://iili.io/Bt0PNVe.md.jpg", majors: ["Teknik Jaringan Komputer & Telekomunikasi (TJK)"] },
             { id: "smksmacida", name: "SMKS Macida Kesehatan", address: "Kalibobo (Jl. Martha Ch.Tiahahu)", map: "https://maps.google.com/?q=SMK+Macida+Nabire", img: "https://iili.io/BiF987t.jpg", majors: ["Farmasi Klinik & Komunikasi (FKK)", "Farmasi Industri(FI)", "Asisten Perawat (AP)", "Asisten Teknik Laboratorium Medik (ATLM)", "Analis Pengujian Laboratorium (APL)"] },
             { id: "smksbakidi", name: "SMKS Bakidi Yasebaper", address: "Kimi", map: "https://maps.google.com/?q=SMK+Bakidi+Nabire", img: "https://iili.io/BDg7gR9.png", majors: ["Agribisnis Tanaman Pangan & Holtikultura"] },
@@ -559,32 +559,32 @@
     const pass = document.getElementById('l-pass').value;
 
     // === PENGATURAN KATA SANDI BERDASARKAN NAMA SEKOLAH ===
-    if (user === 'mkkssmknabire' && pass === 'Master12345') {
+    if (user === 'mkkssmknabire' && pass === 'mastermkks12345') {
         // Master Admin
         state.user = { role: 'master', name: 'MKKS SMK Nabire', id: 'mkkssmknabire' };
     } 
     else if (user === 'smkn1nabire' && pass === 'smkn1nabire12345') {
-        // SMKN 1 Nabire
+        // SMK Negeri 1 Nabire
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smknmakimi' && pass === 'smkn1makimi12345') {
-        // SMKN 1 Makimi
+    else if (user === 'smkn1tkimi' && pass === 'smkntelukkimi12345') {
+        // SMK Negeri 1 Teluk Kimi
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smkn1telukkimi' && pass === 'smkn1telukkimi12345') {
-        // SMKN 1 Teluk Kimi
+    else if (user === 'smkn1makimi' && pass === 'smknmakimi12345') {
+        // SMK Negeri 1 Makimi
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smknwanggar' && pass === 'smkn1wanggar12345') {
-        // SMKN 1 Wanggar
+    else if (user === 'smkn1wanggar' && pass === 'smknwanggar12345') {
+        // SMK Negeri 1 Wanggar
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
     else if (user === 'smkn2nabire' && pass === 'smkn2nabire12345') {
-        // SMKN 2 Nabire
+        // SMK Negeri 2 Nabire
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
@@ -594,7 +594,7 @@
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
     else if (user === 'smksyashaki' && pass === 'yashaki12345') {
-        // SMKS Yashaki
+        // SMKS Yasaki
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
@@ -613,28 +613,33 @@
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smksypkdrnomensen' && pass === 'ypk12345') {
-        // SMKS YPK DR.Nomensen ST. Mambraku
+    else if (user === 'smksypknomensen' && pass === 'ypknomensen12345') {
+        // SMKS YPK Dr. Nomensen ST. Mambraku
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smksasyafiiyah' && pass === 'asyafiiyah12345') {
-        // SMKS Asy Syafi’iyah
+    else if (user === 'smksasysyafiiyah' && pass === 'asyafiiyah12345') {
+        // SMKS Asy Syafiah
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
     else if (user === 'smksalmadinah' && pass === 'almadinah12345') {
-        // SMKS AL - Madinah
+        // SMKS Al Madina
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
     else if (user === 'smksmacida' && pass === 'macida12345') {
-        // SMKS Macida Kesehatan
+        // SMKS Machida Kesehatan
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
     else if (user === 'smksbakidi' && pass === 'bakidi12345') {
-        // SMKS Bakidi Yaseboper
+        // SMKS Bakidya Sebaper
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksyppkyoseph' && pass === 'yppk12345') {
+        // SMKS YPPK ST. Yosef Chalans
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
