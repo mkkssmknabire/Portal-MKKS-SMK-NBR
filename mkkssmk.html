@@ -406,8 +406,8 @@
                             <span class="text-[10px] font-black bg-sky-100 text-sky-700 px-3 py-1 rounded-full uppercase tracking-widest">Dashboard Verifikator</span>
                         </div>
                         <div class="flex gap-3">
-                            <button onclick="exportExcel()" class="bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-2xl text-xs font-bold border border-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-2"><i class="fas fa-file-excel"></i> Ekspor Excel</button>
-                            <button onclick="logout()" class="bg-rose-50 text-rose-700 px-5 py-2.5 rounded-2xl text-xs font-bold border border-rose-100 hover:bg-rose-600 hover:text-white transition">Log Out</button>
+                            <button onclick="exportExcel()" class="bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-2xl text-xs font-bold border border-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-3 mt-10 md:mt-6"><i class="fas fa-file-excel"></i> Ekspor Excel</button>
+                            <button onclick="logout()" class="bg-rose-50 text-rose-700 px-5 py-2.5 rounded-2xl text-xs font-bold border border-rose-100 hover:bg-rose-600 hover:text-white transition flex items-center gap-3 mt-10 md:mt-6">Log Out</button>
                         </div>
                     </div>
 
@@ -553,18 +553,101 @@
             save(); state.selectedSchool = null; nav('home');
         }
 
-        function handleLogin(e) {
-            e.preventDefault();
-            const user = document.getElementById('l-user').value;
-            const pass = document.getElementById('l-pass').value;
-            if (user === 'mkkssmknabire' && pass === 'Master12345') {
-                state.user = { role: 'master', name: 'MKKS SMK Nabire', id: 'mkkssmknabire' };
-            } else if (pass === 'Admin12345') {
-                const school = SCHOOLS.find(s => s.id === user);
-                state.user = { role: 'admin', name: school.name, id: school.id };
-            } else { toast("Password Salah!", "error"); return; }
-            save(); nav('admin'); toast(`Selamat Datang, ${state.user.name}`);
-        }
+       function handleLogin(e) {
+    e.preventDefault();
+    const user = document.getElementById('l-user').value;
+    const pass = document.getElementById('l-pass').value;
+
+    // === PENGATURAN KATA SANDI BERDASARKAN NAMA SEKOLAH ===
+    if (user === 'mkkssmknabire' && pass === 'Master12345') {
+        // Master Admin
+        state.user = { role: 'master', name: 'MKKS SMK Nabire', id: 'mkkssmknabire' };
+    } 
+    else if (user === 'smkn1nabire' && pass === 'smkn1nabire12345') {
+        // SMKN 1 Nabire
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smknmakimi' && pass === 'smknmakimi12345') {
+        // SMKN 1 Makimi
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smkn1telukkimi' && pass === 'smkn1telukkimi12345') {
+        // SMKN 1 Teluk Kimi
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smknwanggar' && pass === 'smknwanggar12345') {
+        // SMKN 1 Wanggar
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smkn2nabire' && pass === 'smkn2nabire12345') {
+        // SMKN 2 Nabire
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smkspetra' && pass === 'smkspetra12345') {
+        // SMKS Petra
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksyashaki' && pass === 'smksyashaki12345') {
+        // SMKS Yashaki
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smkspongtiku' && pass === 'smkspongtiku12345') {
+        // SMKS Pongtiku
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smkskristenanakpanah' && pass === 'smkskristenanakpanah12345') {
+        // SMKS Kristen Anak Panah
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksanigou' && pass === 'smksanigou12345') {
+        // SMKS Anigou Kesehatan
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksypkdrnomensen' && pass === 'smksypkdrnomensen12345') {
+        // SMKS YPK DR.Nomensen ST. Mambraku
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksasyafiiyah' && pass === 'smksasyafiiyah12345') {
+        // SMKS Asy Syafi’iyah
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksalmadinah' && pass === 'smksalmadinah12345') {
+        // SMKS AL - Madinah
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksmacida' && pass === 'smksmacida12345') {
+        // SMKS Macida Kesehatan
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else if (user === 'smksbakidi' && pass === 'smksbakidi12345') {
+        // SMKS Bakidi Yaseboper
+        const school = SCHOOLS.find(s => s.id === user);
+        state.user = { role: 'admin', name: school.name, id: school.id };
+    }
+    else {
+        // Jika nama pengguna atau kata sandi salah
+        toast("Nama Pengguna atau Kata Sandi Salah!", "error"); 
+        return;
+    }
+
+    save(); 
+    nav('admin'); 
+    toast(`Selamat Datang, ${state.user.name}`);
+}
 
         function logout() { state.user = null; save(); nav('home'); toast("Log out sukses."); }
         
