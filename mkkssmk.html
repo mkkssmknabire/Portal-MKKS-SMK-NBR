@@ -638,10 +638,6 @@
         const school = SCHOOLS.find(s => s.id === user);
         state.user = { role: 'admin', name: school.name, id: school.id };
     }
-    else if (user === 'smksyppk' && pass === 'yppk12345') {
-        // SMKS YPPK ST.Yoseph Calanz
-        const school = SCHOOLS.find(s => s.id === user);
-        state.user = { role: 'admin', name: school.name, id: school.id };
     else {
         // Jika nama pengguna atau kata sandi salah
         toast("Nama Pengguna atau Kata Sandi Salah!", "error"); 
