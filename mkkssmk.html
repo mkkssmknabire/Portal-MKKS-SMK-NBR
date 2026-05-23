@@ -532,26 +532,45 @@
 
         function selectSchoolForDaftar(schoolName) { state.selectedSchool = schoolName; nav('daftar'); }
 
-        function handleDaftar(e) {
-            e.preventDefault();
-            const form = new FormData(e.target);
-            const data = Object.fromEntries(form.entries());
-            const isDuplicate = state.registrations.some(r => (r.nik === data.nik || r.nisn === data.nisn) && r.id !== state.editData?.id);
-            if (isDuplicate) { toast("Data Gagal Dikirim! NIK/NISN sudah terdaftar.", "error"); return; }
-            if (state.editData) {
-                const idx = state.registrations.findIndex(r => r.id === state.editData.id);
-                state.registrations[idx] = { ...state.registrations[idx], ...data };
-                state.editData = null;
-                toast("Data berhasil diperbarui.");
-            } else {
-                data.id = Date.now().toString();
-                data.status = 'Pending';
-                data.date = new Date().toISOString().split('T')[0];
-                state.registrations.push(data);
-                toast("Pendaftaran Berhasil Dikirim!");
-            }
-            save(); state.selectedSchool = null; nav('home');
+       async function handleDaftar(e) {
+    e.preventDefault();
+    
+    // Ambil form dan data di dalamnya
+    const formElement = e.target;
+    const form = new FormData(formElement);
+    
+    // Ubah tulisan tombol agar user tahu proses sedang berjalan
+    const submitBtn = formElement.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = "MENGIRIM DATA...";
+    submitBtn.disabled = true;
+
+    try {
+        // Kirim data ke file PHP yang baru saja kita buat
+        const response = await fetch('simpan_pendaftar.php', {
+            method: 'POST',
+            body: form
+        });
+
+        // Baca balasan dari PHP (sukses atau error)
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            toast(result.pesan, "success");
+            state.selectedSchool = null; 
+            nav('home'); // Pindahkan user kembali ke beranda
+        } else {
+            toast(result.pesan, "error"); // Tampilkan pesan error dari PHP
         }
+    } catch (error) {
+        console.error("Error:", error);
+        toast("Terjadi kesalahan jaringan/server.", "error");
+    } finally {
+        // Kembalikan tombol ke keadaan semula
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+}
 
        function handleLogin(e) {
     e.preventDefault();
