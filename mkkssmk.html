@@ -64,7 +64,42 @@
     <!-- TOAST NOTIFICATION -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] space-y-3 pointer-events-none"></div>
 
+    <!-- PENGGUNAAN FIREBASE SDK SECARA COMPAT AGAR BISA DIBUKA LOKAL TANPA ERROR -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <script>
+        // =========================================================================
+        // KONFIGURASI DATABASE FIREBASE ANDA
+        // Jika Anda sudah memiliki Firebase, hapus tanda // dan isi nilainya
+        // =========================================================================
+        const MY_FIREBASE_CONFIG = {
+            // apiKey: "API_KEY_ANDA",
+            // authDomain: "PROJECT_ID.firebaseapp.com",
+            // projectId: "PROJECT_ID",
+            // storageBucket: "PROJECT_ID.appspot.com",
+            // messagingSenderId: "SENDER_ID",
+            // appId: "APP_ID"
+        };
+        // =========================================================================
+
+        let useFirebase = false;
+        
+        // Pengecekan otomatis: Menggunakan Cloud Database atau Penyimpanan Lokal
+        if (Object.keys(MY_FIREBASE_CONFIG).length > 0) {
+            try {
+                firebase.initializeApp(MY_FIREBASE_CONFIG);
+                useFirebase = true;
+                console.log("Status: Menggunakan Cloud Database (Real-time).");
+            } catch(e) {
+                console.warn("Gagal inisialisasi Firebase, kembali ke mode Lokal.", e);
+            }
+        } else {
+            console.log("Status: Menggunakan Penyimpanan Lokal (Data hanya tersimpan di perangkat ini). Masukkan konfigurasi Firebase untuk mode Online.");
+        }
+
+        const db = useFirebase ? firebase.firestore() : null;
+
         // --- DATA SEKOLAH ---
         const SCHOOLS = [
             { id: "smkn1nabire", name: "SMKN 1 Nabire", address: "Kaliharapan (Jl. Ampera)", map: "https://maps.google.com/?q=SMKN+1+Nabire", img: "https://iili.io/BDg7six.png", majors: ["Desain Komunikasi & Visual (DKV)","Teknik Jaringan & Komputer (TJKT)", "Brokesting & Perfileman (BP)", "Agribisnis Tanaman Pangan & Hortikultura (ATPH)", "Agribisnis Tanaman Perkebunan (ATP)", "Agribisnis Ternak Unggas (ATU)", "Keperawatan Hewan", "Agribisnis Pengolahan Hasil Pertanian (APHP)", "Agribisnis Perikanan Air Tawar (APAT)"] },
@@ -87,16 +122,31 @@
 
         let state = {
             view: 'home',
-            user: JSON.parse(localStorage.getItem('user')) || null,
-            registrations: JSON.parse(localStorage.getItem('registrations')) || [],
+            user: JSON.parse(localStorage.getItem('user')) || null, // Sesi login admin 
+            registrations: JSON.parse(localStorage.getItem('registrations')) || [], 
             news: JSON.parse(localStorage.getItem('news')) || [
-                { id: 1, title: "Pembukaan PPDB 2026/2027", author: "MKKS SMK Nabire", authorId: "mkkssmknabire", content: "Pendaftaran siswa baru SMK se-Kabupaten Nabire resmi dibuka mulai hari ini.", date: "2026-02-15" }
-            ],
+                { id: "1", title: "Pembukaan PPDB 2026/2027", author: "MKKS SMK Nabire", authorId: "mkkssmknabire", content: "Pendaftaran siswa baru SMK se-Kabupaten Nabire resmi dibuka mulai hari ini.", date: "2026-02-15" }
+            ], 
             editData: null,
             editNewsData: null,
             selectedSchool: null,
             adminTab: 'pendaftar'
         };
+
+        // Jika menggunakan Firebase, baca data dari server secara real-time
+        if (useFirebase) {
+            db.collection("registrations").onSnapshot((snapshot) => {
+                state.registrations = [];
+                snapshot.forEach((doc) => state.registrations.push(doc.data()));
+                if (state.view !== 'daftar') render(); // Cegah gangguan saat user sedang mengisi form
+            });
+
+            db.collection("news").onSnapshot((snapshot) => {
+                state.news = [];
+                snapshot.forEach((doc) => state.news.push(doc.data()));
+                if (state.view !== 'daftar') render();
+            });
+        }
 
         // --- CORE FUNCTIONS ---
         function toast(msg, type = 'success') {
@@ -108,9 +158,11 @@
             setTimeout(() => el.remove(), 3000);
         }
 
-        function save() {
-            localStorage.setItem('registrations', JSON.stringify(state.registrations));
-            localStorage.setItem('news', JSON.stringify(state.news));
+        function saveLocalData() {
+            if (!useFirebase) {
+                localStorage.setItem('registrations', JSON.stringify(state.registrations));
+                localStorage.setItem('news', JSON.stringify(state.news));
+            }
             localStorage.setItem('user', JSON.stringify(state.user));
         }
 
@@ -202,7 +254,7 @@
                                 <h3 class="text-xl font-bold mb-3 group-hover:text-sky-600 transition">${n.title}</h3>
                                 <p class="text-slate-600 leading-relaxed text-sm">${n.content}</p>
                             </div>
-                        `).join('') : '<p class="text-center text-slate-400 py-20 italic">Belum ada berita terbaru.</p>'}
+                        `).join('') : '<p class="text-center text-slate-400 py-20 italic">Belum ada berita terbaru saat ini.</p>'}
                     </div>
                 </div>
             `;
@@ -313,6 +365,8 @@
             const editMode = !!state.editData;
             return `
                 <div class="max-w-3xl mx-auto py-12 px-6">
+                    ${!useFirebase ? `<div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl mb-6 text-sm font-medium"><i class="fas fa-exclamation-triangle mr-2"></i><b>Mode Lokal Aktif:</b> Data pendaftaran hanya akan tersimpan di perangkat ini karena konfigurasi Database belum diatur.</div>` : ''}
+                    
                     <div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 custom-shadow">
                         <h2 class="text-2xl font-bold text-sky-900 text-center mb-10">${editMode ? 'Edit Data Pendaftar' : 'Formulir Pendaftaran Siswa'}</h2>
                         <form onsubmit="handleDaftar(event)" class="space-y-6">
@@ -510,8 +564,8 @@
                                         <p class="text-sm text-slate-500 leading-relaxed line-clamp-2">${n.content}</p>
                                     </div>
                                     <div class="flex sm:flex-col gap-2 shrink-0">
-                                        <button onclick="editNews(${n.id})" class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-600 hover:text-white transition shadow-sm border border-sky-100"><i class="fas fa-edit"></i></button>
-                                        <button onclick="deleteNews(${n.id})" class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition shadow-sm border border-rose-100"><i class="fas fa-trash-alt"></i></button>
+                                        <button onclick="editNews('${n.id}')" class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-600 hover:text-white transition shadow-sm border border-sky-100"><i class="fas fa-edit"></i></button>
+                                        <button onclick="deleteNews('${n.id}')" class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition shadow-sm border border-rose-100"><i class="fas fa-trash-alt"></i></button>
                                     </div>
                                 </div>
                             `).reverse().join('')}
@@ -532,8 +586,7 @@
 
         function selectSchoolForDaftar(schoolName) { state.selectedSchool = schoolName; nav('daftar'); }
 
-        // MENGEMBALIKAN FUNGSI MENYIMPAN KE LOCAL STORAGE (AGAR MUNCUL DI PANEL ADMIN)
-        function handleDaftar(e) {
+        async function handleDaftar(e) {
             e.preventDefault();
             
             const formElement = e.target;
@@ -545,29 +598,43 @@
             submitBtn.innerText = "MENYIMPAN DATA...";
             submitBtn.disabled = true;
 
-            setTimeout(() => {
+            try {
                 if (state.editData) {
-                    // Update data yang sudah ada (Mode Edit Admin)
-                    const idx = state.registrations.findIndex(r => r.id === state.editData.id);
-                    state.registrations[idx] = { ...state.registrations[idx], ...data };
+                    // Update Mode
+                    if (useFirebase) {
+                        await db.collection("registrations").doc(state.editData.id.toString()).update(data);
+                    } else {
+                        const idx = state.registrations.findIndex(r => r.id === state.editData.id);
+                        state.registrations[idx] = { ...state.registrations[idx], ...data };
+                    }
                     state.editData = null;
                     toast("Data berhasil diperbarui!", "success");
+                    saveLocalData();
                     nav('admin');
                 } else {
-                    // Simpan data pendaftar baru
-                    data.id = Date.now().toString(); // Buat ID unik
-                    data.status = 'Menunggu'; // Status awal
-                    state.registrations.push(data);
-                    toast("Pendaftaran berhasil dikirim!", "success");
+                    // Pendaftaran Baru
+                    const newId = Date.now().toString();
+                    data.id = newId;
+                    data.status = 'Menunggu'; 
+                    
+                    if (useFirebase) {
+                        await db.collection("registrations").doc(newId).set(data);
+                    } else {
+                        state.registrations.push(data);
+                    }
+
+                    toast("Pendaftaran berhasil disimpan!", "success");
+                    saveLocalData();
                     state.selectedSchool = null; 
                     nav('home');
                 }
-                
-                save(); // Fungsi yang akan menyimpannya ke Local Storage
-
+            } catch (error) {
+                toast("Terjadi kesalahan sistem saat menyimpan data.", "error");
+                console.error(error);
+            } finally {
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
-            }, 600); // Memberikan efek loading sebentar
+            }
         }
 
         function handleLogin(e) {
@@ -648,50 +715,101 @@
                 return;
             }
 
-            save(); 
+            saveLocalData();
             nav('admin'); 
             toast(`Selamat Datang, ${state.user.name}`);
         }
 
-        function logout() { state.user = null; save(); nav('home'); toast("Log out sukses."); }
-        
-        function updateStatus(id, status) { 
-            const idx = state.registrations.findIndex(r => r.id === id);
-            state.registrations[idx].status = status; save(); render(); toast(`Status diperbarui ke ${status}`);
+        function logout() { 
+            state.user = null; 
+            saveLocalData();
+            nav('home'); 
+            toast("Log out sukses."); 
         }
         
-        function deletePendaftar(id) { if (!confirm("Hapus data?")) return; state.registrations = state.registrations.filter(r => r.id !== id); save(); render(); }
+        async function updateStatus(id, status) { 
+            try {
+                if (useFirebase) {
+                    await db.collection("registrations").doc(id.toString()).update({ status: status });
+                } else {
+                    const idx = state.registrations.findIndex(r => r.id === id);
+                    state.registrations[idx].status = status;
+                    saveLocalData();
+                    render();
+                }
+                toast(`Status diperbarui ke ${status}`);
+            } catch (error) {
+                toast("Gagal mengubah status.", "error");
+            }
+        }
+        
+        async function deletePendaftar(id) { 
+            if (!confirm("Hapus data secara permanen?")) return; 
+            try {
+                if (useFirebase) {
+                    await db.collection("registrations").doc(id.toString()).delete();
+                } else {
+                    state.registrations = state.registrations.filter(r => r.id !== id);
+                    saveLocalData();
+                    render();
+                }
+                toast("Data berhasil dihapus.");
+            } catch (error) {
+                toast("Gagal menghapus data.", "error");
+            }
+        }
+
         function triggerEdit(id) { state.editData = state.registrations.find(r => r.id === id); nav('daftar'); }
         function cancelEdit() { state.editData = null; nav('admin'); }
-
         function setAdminTab(tab) { state.adminTab = tab; state.editNewsData = null; render(); }
 
-        function handleNewsSubmit(e) {
+        async function handleNewsSubmit(e) {
             e.preventDefault();
             const form = new FormData(e.target);
             const data = Object.fromEntries(form.entries());
             
-            if (state.editNewsData) {
-                const idx = state.news.findIndex(n => n.id === state.editNewsData.id);
-                if (state.user.role !== 'master' && state.news[idx].authorId !== state.user.id) {
-                    toast("Anda tidak memiliki izin mengedit berita ini.", "error");
-                    return;
+            try {
+                if (state.editNewsData) {
+                    const idx = state.news.findIndex(n => n.id === state.editNewsData.id);
+                    if (state.user.role !== 'master' && state.news[idx].authorId !== state.user.id) {
+                        toast("Anda tidak memiliki izin mengedit berita ini.", "error");
+                        return;
+                    }
+
+                    if (useFirebase) {
+                        await db.collection("news").doc(state.editNewsData.id.toString()).update({ title: data.title, content: data.content });
+                    } else {
+                        state.news[idx] = { ...state.news[idx], title: data.title, content: data.content };
+                        saveLocalData();
+                        render();
+                    }
+                    
+                    state.editNewsData = null;
+                    toast("Berita berhasil diperbarui.");
+                } else {
+                    const newId = Date.now().toString();
+                    const newsData = {
+                        id: newId,
+                        title: data.title,
+                        content: data.content,
+                        author: state.user.name,
+                        authorId: state.user.id,
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    if (useFirebase) {
+                        await db.collection("news").doc(newId).set(newsData);
+                    } else {
+                        state.news.push(newsData);
+                        saveLocalData();
+                        render();
+                    }
+                    
+                    toast("Berita baru berhasil diposting!");
                 }
-                state.news[idx] = { ...state.news[idx], title: data.title, content: data.content };
-                state.editNewsData = null;
-                toast("Berita berhasil diperbarui.");
-            } else {
-                state.news.push({
-                    id: Date.now(),
-                    title: data.title,
-                    content: data.content,
-                    author: state.user.name,
-                    authorId: state.user.id,
-                    date: new Date().toISOString().split('T')[0]
-                });
-                toast("Berita baru berhasil diposting!");
+            } catch (error) {
+                toast("Gagal menyimpan berita.", "error");
             }
-            save(); render();
         }
 
         function editNews(id) {
@@ -699,15 +817,25 @@
             render();
         }
 
-        function deleteNews(id) {
+        async function deleteNews(id) {
             const newsToDelete = state.news.find(n => n.id === id);
             if (state.user.role !== 'master' && newsToDelete.authorId !== state.user.id) {
                 toast("Izin ditolak.", "error");
                 return;
             }
-            if (!confirm("Hapus berita ini?")) return;
-            state.news = state.news.filter(n => n.id !== id);
-            save(); render(); toast("Berita berhasil dihapus.");
+            if (!confirm("Hapus berita ini dari database?")) return;
+            try {
+                if (useFirebase) {
+                    await db.collection("news").doc(id.toString()).delete();
+                } else {
+                    state.news = state.news.filter(n => n.id !== id);
+                    saveLocalData();
+                    render();
+                }
+                toast("Berita berhasil dihapus.");
+            } catch (error) {
+                toast("Gagal menghapus berita.", "error");
+            }
         }
 
         function cancelNewsEdit() { state.editNewsData = null; render(); }
@@ -726,7 +854,7 @@
             XLSX.writeFile(wb, `PPDB_NABIRE_${new Date().getFullYear()}.xlsx`);
         }
 
-        render();
+        render(); // Panggil fungsi render agar tampilan muncul
     </script>
 </body>
 </html>
