@@ -119,7 +119,7 @@
             console.log("Status: Menggunakan Penyimpanan Lokal (Data hanya tersimpan di perangkat ini).");
         }
 
-        // Fungsi Helper untuk path Firestore (Sesuai dengan aturan akses keamanan platform)
+        // Fungsi Helper untuk path Firestore (Mendukung Platform & Config Sendiri)
         function getColRef(colName) {
             if (typeof __firebase_config !== 'undefined') {
                 return db.collection('artifacts').doc(appId).collection('public').doc('data').collection(colName);
@@ -167,28 +167,6 @@
 
         // Sinkronisasi Firebase Real-time dengan Autentikasi
         if (useFirebase && db && auth) {
-            // Pastikan mendengarkan snapshot hanya SETELAH user berhasil diotentikasi
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    getColRef("registrations").onSnapshot((snapshot) => {
-                        state.registrations = [];
-                        snapshot.forEach((doc) => state.registrations.push(doc.data()));
-                        if (state.view !== 'daftar') render(); // Cegah gangguan saat user sedang mengisi form
-                    }, (error) => {
-                        console.error("Gagal menarik data pendaftar:", error);
-                    });
-
-                    getColRef("news").onSnapshot((snapshot) => {
-                        state.news = [];
-                        snapshot.forEach((doc) => state.news.push(doc.data()));
-                        if (state.view !== 'daftar') render();
-                    }, (error) => {
-                        console.error("Gagal menarik data berita:", error);
-                    });
-                }
-            });
-
-            // Lakukan proses autentikasi (Anonymous atau Custom Token)
             async function initAuth() {
                 try {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -196,8 +174,32 @@
                     } else {
                         await auth.signInAnonymously();
                     }
+                    
+                    // Pastikan mendengarkan snapshot hanya SETELAH user berhasil diotentikasi
+                    auth.onAuthStateChanged((user) => {
+                        if (user) {
+                            getColRef("registrations").onSnapshot((snapshot) => {
+                                state.registrations = [];
+                                snapshot.forEach((doc) => state.registrations.push(doc.data()));
+                                if (state.view !== 'daftar') render(); // Cegah gangguan saat user sedang mengisi form
+                            }, (error) => {
+                                console.error("Gagal menarik data pendaftar:", error);
+                            });
+
+                            getColRef("news").onSnapshot((snapshot) => {
+                                state.news = [];
+                                snapshot.forEach((doc) => state.news.push(doc.data()));
+                                if (state.view !== 'daftar') render();
+                            }, (error) => {
+                                console.error("Gagal menarik data berita:", error);
+                            });
+                        }
+                    });
                 } catch (err) {
                     console.error("Autentikasi gagal:", err);
+                    console.warn("Beralih otomatis ke Mode Lokal agar aplikasi tetap bisa beroperasi.");
+                    useFirebase = false; // Mematikan sinkronisasi jika rules atau konfigurasi Auth gagal
+                    if (state.view === 'home' || state.view === 'admin') toast("Peringatan: Cloud ditolak (Cek Auth/Rules). Mode Lokal Aktif.", "error");
                 }
             }
             initAuth();
@@ -212,7 +214,7 @@
             el.className = `p-4 rounded-xl shadow-xl text-white font-medium text-sm animate-fade-in ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'} pointer-events-auto`;
             el.innerText = msg;
             container.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
+            setTimeout(() => el.remove(), 4000);
         }
 
         function saveLocalData() {
@@ -424,25 +426,25 @@
             const editMode = !!state.editData;
             return `
                 <div class="max-w-3xl mx-auto py-12 px-6">
-                    ${!useFirebase ? `<div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl mb-6 text-sm font-medium"><i class="fas fa-exclamation-triangle mr-2"></i><b>Mode Lokal Aktif:</b> Data pendaftaran hanya akan tersimpan di perangkat ini karena konfigurasi Database belum diatur.</div>` : ''}
+                    ${!useFirebase ? `<div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl mb-6 text-sm font-medium shadow-sm"><i class="fas fa-exclamation-triangle mr-2 text-amber-500"></i><b>Mode Lokal Aktif:</b> Data pendaftaran hanya akan tersimpan di perangkat ini karena sistem Cloud tidak terhubung atau ditolak.</div>` : ''}
                     
                     <div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 custom-shadow">
                         <h2 class="text-2xl font-bold text-sky-900 text-center mb-10">${editMode ? 'Edit Data Pendaftar' : 'Formulir Pendaftaran Siswa'}</h2>
                         <form onsubmit="handleDaftar(event)" class="space-y-6">
                             <div class="grid md:grid-cols-2 gap-6">
-                                <input type="number" name="nisn" value="${state.editData?.nisn || ''}" placeholder="NISN" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
-                                <input type="number" name="nik" value="${state.editData?.nik || ''}" placeholder="NIK" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
+                                <input type="number" name="nisn" value="${state.editData?.nisn || ''}" placeholder="NISN" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
+                                <input type="number" name="nik" value="${state.editData?.nik || ''}" placeholder="NIK" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                             </div>
-                            <input type="text" name="nama" value="${state.editData?.nama || ''}" placeholder="Nama Lengkap" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
+                            <input type="text" name="nama" value="${state.editData?.nama || ''}" placeholder="Nama Lengkap" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                             <div class="grid md:grid-cols-2 gap-6">
-                                <input type="text" name="ttl" value="${state.editData?.ttl || ''}" placeholder="Tempat, Tanggal Lahir" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
-                                <select name="jk" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
+                                <input type="text" name="ttl" value="${state.editData?.ttl || ''}" placeholder="Tempat, Tanggal Lahir" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
+                                <select name="jk" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                                     <option value="Laki-laki" ${state.editData?.jk === 'Laki-laki' ? 'selected' : ''}>Laki-laki</option>
                                     <option value="Perempuan" ${state.editData?.jk === 'Perempuan' ? 'selected' : ''}>Perempuan</option>
                                 </select>
                             </div>
                             <div class="grid md:grid-cols-2 gap-6">
-                                <select name="agama" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
+                                <select name="agama" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                                     <option value="">-- Pilih Agama --</option>
                                     <option value="Islam" ${state.editData?.agama === 'Islam' ? 'selected' : ''}>Islam</option>
                                     <option value="Kristen Protestan" ${state.editData?.agama === 'Kristen Protestan' ? 'selected' : ''}>Kristen Protestan</option>
@@ -451,17 +453,17 @@
                                     <option value="Budha" ${state.editData?.agama === 'Budha' ? 'selected' : ''}>Budha</option>
                                     <option value="Konghucu" ${state.editData?.agama === 'Konghucu' ? 'selected' : ''}>Konghucu</option>
                                 </select>
-                                <input type="tel" name="telepon" value="${state.editData?.telepon || ''}" placeholder="Nomor HP/WA" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
+                                <input type="tel" name="telepon" value="${state.editData?.telepon || ''}" placeholder="Nomor HP/WA" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                             </div>
-                            <input type="text" name="asalSekolah" value="${state.editData?.asalSekolah || ''}" placeholder="Asal Sekolah (SMP/MTs)" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500">
-                            <textarea name="alamat" placeholder="Alamat Lengkap" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 h-24">${state.editData?.alamat || ''}</textarea>
+                            <input type="text" name="asalSekolah" value="${state.editData?.asalSekolah || ''}" placeholder="Asal Sekolah (SMP/MTs)" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
+                            <textarea name="alamat" placeholder="Alamat Lengkap" required class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-sky-500 h-24 transition-colors">${state.editData?.alamat || ''}</textarea>
                             
                             <div class="p-6 bg-sky-50 rounded-3xl border border-sky-100 space-y-4">
-                                <select id="smk-select" name="smk" onchange="updateMajorsDropdown(this.value)" required class="w-full p-4 bg-white border border-sky-100 rounded-2xl outline-none focus:border-sky-500">
+                                <select id="smk-select" name="smk" onchange="updateMajorsDropdown(this.value)" required class="w-full p-4 bg-white border border-sky-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                                     <option value="">-- Pilih Sekolah Tujuan --</option>
                                     ${SCHOOLS.map(s => `<option value="${s.name}" ${(state.editData?.smk || state.selectedSchool) === s.name ? 'selected' : ''}>${s.name}</option>`).join('')}
                                 </select>
-                                <select id="major-select" name="jurusan" required class="w-full p-4 bg-white border border-sky-100 rounded-2xl outline-none focus:border-sky-500">
+                                <select id="major-select" name="jurusan" required class="w-full p-4 bg-white border border-sky-100 rounded-2xl outline-none focus:border-sky-500 transition-colors">
                                     <option value="">-- Pilih Jurusan --</option>
                                 </select>
                             </div>
@@ -658,33 +660,45 @@
             const data = Object.fromEntries(form.entries());
             
             const submitBtn = formElement.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerText;
-            submitBtn.innerText = "MENYIMPAN DATA...";
-            submitBtn.disabled = true;
+            const originalText = submitBtn ? submitBtn.innerText : "Simpan";
+            if (submitBtn) { submitBtn.innerText = "MENYIMPAN DATA..."; submitBtn.disabled = true; }
 
             try {
                 if (state.editData) {
-                    // Update Mode
+                    // Update Mode (Optimistic Local Update pertama)
+                    const idx = state.registrations.findIndex(r => r.id === state.editData.id);
+                    if (idx !== -1) state.registrations[idx] = { ...state.registrations[idx], ...data };
+
                     if (useFirebase && db) {
-                        await getColRef("registrations").doc(state.editData.id.toString()).update(data);
-                    } else {
-                        const idx = state.registrations.findIndex(r => r.id === state.editData.id);
-                        state.registrations[idx] = { ...state.registrations[idx], ...data };
+                        try {
+                            await getColRef("registrations").doc(state.editData.id.toString()).update(data);
+                        } catch (fbErr) {
+                            console.warn("Cloud error (Penyimpanan lokal digunakan):", fbErr);
+                            toast("Cloud Error: " + fbErr.message + " | Data tetap disimpan lokal.", "error");
+                            useFirebase = false; // Disable to prevent further disruptive errors
+                        }
                     }
+                    
                     state.editData = null;
                     toast("Data berhasil diperbarui!", "success");
                     saveLocalData();
                     nav('admin');
                 } else {
-                    // Pendaftaran Baru
+                    // Pendaftaran Baru (Optimistic Local Update pertama)
                     const newId = Date.now().toString();
                     data.id = newId;
                     data.status = 'Menunggu'; 
                     
+                    state.registrations.push(data); // Simpan lokal langsung
+
                     if (useFirebase && db) {
-                        await getColRef("registrations").doc(newId).set(data);
-                    } else {
-                        state.registrations.push(data);
+                        try {
+                            await getColRef("registrations").doc(newId).set(data);
+                        } catch (fbErr) {
+                            console.warn("Cloud error (Penyimpanan lokal digunakan):", fbErr);
+                            toast("Cloud Ditolak (" + fbErr.message + ") | Data tetap disimpan lokal.", "error");
+                            useFirebase = false; // Disable to prevent further disruptive errors
+                        }
                     }
 
                     toast("Pendaftaran berhasil disimpan!", "success");
@@ -693,11 +707,13 @@
                     nav('home');
                 }
             } catch (error) {
-                toast("Terjadi kesalahan sistem saat menyimpan data.", "error");
+                toast("Kesalahan Sistem: " + (error.message || "Gagal memproses data."), "error");
                 console.error(error);
             } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
             }
         }
 
@@ -792,33 +808,47 @@
         
         async function updateStatus(id, status) { 
             try {
+                // Optimistic Update
+                const idx = state.registrations.findIndex(r => r.id === id);
+                if (idx !== -1) state.registrations[idx].status = status;
+
                 if (useFirebase && db) {
-                    await getColRef("registrations").doc(id.toString()).update({ status: status });
-                } else {
-                    const idx = state.registrations.findIndex(r => r.id === id);
-                    state.registrations[idx].status = status;
-                    saveLocalData();
-                    render();
+                    try {
+                        await getColRef("registrations").doc(id.toString()).update({ status: status });
+                    } catch (fbErr) {
+                        toast("Cloud Error: " + fbErr.message, "error");
+                        useFirebase = false;
+                    }
                 }
+                
+                saveLocalData();
+                render();
                 toast(`Status diperbarui ke ${status}`);
             } catch (error) {
-                toast("Gagal mengubah status.", "error");
+                toast("Gagal mengubah status: " + error.message, "error");
             }
         }
         
         async function deletePendaftar(id) { 
             if (!confirm("Hapus data secara permanen?")) return; 
             try {
+                // Optimistic Update
+                state.registrations = state.registrations.filter(r => r.id !== id);
+
                 if (useFirebase && db) {
-                    await getColRef("registrations").doc(id.toString()).delete();
-                } else {
-                    state.registrations = state.registrations.filter(r => r.id !== id);
-                    saveLocalData();
-                    render();
+                    try {
+                        await getColRef("registrations").doc(id.toString()).delete();
+                    } catch (fbErr) {
+                        toast("Cloud Error: " + fbErr.message, "error");
+                        useFirebase = false;
+                    }
                 }
+                
+                saveLocalData();
+                render();
                 toast("Data berhasil dihapus.");
             } catch (error) {
-                toast("Gagal menghapus data.", "error");
+                toast("Gagal menghapus data: " + error.message, "error");
             }
         }
 
@@ -851,14 +881,20 @@
                         return;
                     }
 
+                    // Optimistic update
+                    state.news[idx] = { ...state.news[idx], title: data.title, content: data.content };
+
                     if (useFirebase && db) {
-                        await getColRef("news").doc(state.editNewsData.id.toString()).update({ title: data.title, content: data.content });
-                    } else {
-                        state.news[idx] = { ...state.news[idx], title: data.title, content: data.content };
-                        saveLocalData();
-                        render();
+                        try {
+                            await getColRef("news").doc(state.editNewsData.id.toString()).update({ title: data.title, content: data.content });
+                        } catch (fbErr) {
+                            toast("Cloud Error: " + fbErr.message, "error");
+                            useFirebase = false;
+                        }
                     }
                     
+                    saveLocalData();
+                    render();
                     state.editNewsData = null;
                     toast("Berita berhasil diperbarui.");
                 } else {
@@ -872,18 +908,23 @@
                         date: new Date().toISOString().split('T')[0]
                     };
                     
+                    state.news.push(newsData); // Optimistic Update
+
                     if (useFirebase && db) {
-                        await getColRef("news").doc(newId).set(newsData);
-                    } else {
-                        state.news.push(newsData);
-                        saveLocalData();
-                        render();
+                        try {
+                            await getColRef("news").doc(newId).set(newsData);
+                        } catch (fbErr) {
+                            toast("Cloud Error: " + fbErr.message, "error");
+                            useFirebase = false;
+                        }
                     }
                     
+                    saveLocalData();
+                    render();
                     toast("Berita baru berhasil diposting!");
                 }
             } catch (error) {
-                toast("Gagal menyimpan berita.", "error");
+                toast("Gagal menyimpan berita: " + error.message, "error");
             }
         }
 
@@ -899,17 +940,25 @@
                 return;
             }
             if (!confirm("Hapus berita ini dari database?")) return;
+            
             try {
+                // Optimistic Update
+                state.news = state.news.filter(n => n.id !== id);
+
                 if (useFirebase && db) {
-                    await getColRef("news").doc(id.toString()).delete();
-                } else {
-                    state.news = state.news.filter(n => n.id !== id);
-                    saveLocalData();
-                    render();
+                    try {
+                        await getColRef("news").doc(id.toString()).delete();
+                    } catch (fbErr) {
+                        toast("Cloud Error: " + fbErr.message, "error");
+                        useFirebase = false;
+                    }
                 }
+                
+                saveLocalData();
+                render();
                 toast("Berita berhasil dihapus.");
             } catch (error) {
-                toast("Gagal menghapus berita.", "error");
+                toast("Gagal menghapus berita: " + error.message, "error");
             }
         }
 
