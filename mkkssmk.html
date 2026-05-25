@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MKKS SMK Nabire - Portal PPDB 2026/2027</title>
+    
+    <!-- CSS & Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; color: #1e293b; scroll-behavior: smooth; }
         .hero-bg { background: linear-gradient(rgba(14, 165, 233, 0.9), rgba(14, 165, 233, 0.7)), url('https://iili.io/BDgh1Xp.png'); background-size: contain; background-position: center; background-repeat: no-repeat; }
@@ -19,7 +24,7 @@
 </head>
 <body class="pb-16 md:pb-0">
 
-    <!-- NAVIGATION -->
+    <!-- NAVIGATION DESKTOP -->
     <nav class="hidden md:flex fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b px-10 py-4 justify-between items-center shadow-sm">
         <div class="flex items-center gap-3">
             <img src="https://iili.io/BDgh1Xp.png" alt="Logo MKKS" class="h-10">
@@ -36,7 +41,7 @@
         </div>
     </nav>
 
-    <!-- MOBILE NAV -->
+    <!-- NAVIGATION MOBILE -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t flex justify-around py-3 z-50 shadow-lg">
         <button onclick="nav('home')" class="text-slate-400 focus:text-sky-600 flex flex-col items-center gap-1">
             <i class="fas fa-home"></i><span class="text-[10px]">Home</span>
@@ -58,49 +63,73 @@
         </button>
     </nav>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT CONTAINER -->
     <div id="content" class="md:pt-20 min-h-screen"></div>
 
-    <!-- TOAST NOTIFICATION -->
+    <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] space-y-3 pointer-events-none"></div>
 
-    <!-- PENGGUNAAN FIREBASE SDK SECARA COMPAT AGAR BISA DIBUKA LOKAL TANPA ERROR -->
+    <!-- FIREBASE SDK (COMPAT MODE) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
+    <!-- MAIN APPLICATION SCRIPT -->
     <script>
         // =========================================================================
-        // KONFIGURASI DATABASE FIREBASE ANDA
-        // Jika Anda sudah memiliki Firebase, hapus tanda // dan isi nilainya
+        // 1. KONFIGURASI DATABASE FIREBASE
         // =========================================================================
         const MY_FIREBASE_CONFIG = {
-            // apiKey: "API_KEY_ANDA",
-            // authDomain: "PROJECT_ID.firebaseapp.com",
-            // projectId: "PROJECT_ID",
-            // storageBucket: "PROJECT_ID.appspot.com",
-            // messagingSenderId: "SENDER_ID",
-            // appId: "APP_ID"
+            apiKey: "AIzaSyD_EedGqznHExcQjMYjNO8h-Nn6F14F7g4",
+            authDomain: "mkks-smk-nabire.firebaseapp.com",
+            projectId: "mkks-smk-nabire",
+            storageBucket: "mkks-smk-nabire.firebasestorage.app",
+            messagingSenderId: "491466366977",
+            appId: "1:491466366977:web:d82a92fd6ffc75232fe000",
+            measurementId: "G-TQFZVDN3LE"
         };
-        // =========================================================================
 
+        // =========================================================================
+        // 2. INISIALISASI DATABASE & STATE
+        // =========================================================================
         let useFirebase = false;
+        let db = null;
+        let auth = null;
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'mkks-app';
         
-        // Pengecekan otomatis: Menggunakan Cloud Database atau Penyimpanan Lokal
-        if (Object.keys(MY_FIREBASE_CONFIG).length > 0) {
+        // Pengecekan otomatis: Menggunakan Cloud Database platform atau Penyimpanan Lokal
+        let configToUse = null;
+        if (typeof __firebase_config !== 'undefined') {
+            configToUse = JSON.parse(__firebase_config);
+        } else if (Object.keys(MY_FIREBASE_CONFIG).length > 0 && MY_FIREBASE_CONFIG.apiKey !== "") {
+            configToUse = MY_FIREBASE_CONFIG;
+        }
+
+        if (configToUse) {
             try {
-                firebase.initializeApp(MY_FIREBASE_CONFIG);
+                firebase.initializeApp(configToUse);
+                db = firebase.firestore();
+                auth = firebase.auth();
                 useFirebase = true;
                 console.log("Status: Menggunakan Cloud Database (Real-time).");
             } catch(e) {
                 console.warn("Gagal inisialisasi Firebase, kembali ke mode Lokal.", e);
             }
         } else {
-            console.log("Status: Menggunakan Penyimpanan Lokal (Data hanya tersimpan di perangkat ini). Masukkan konfigurasi Firebase untuk mode Online.");
+            console.log("Status: Menggunakan Penyimpanan Lokal (Data hanya tersimpan di perangkat ini).");
         }
 
-        const db = useFirebase ? firebase.firestore() : null;
+        // Fungsi Helper untuk path Firestore (Sesuai dengan aturan akses keamanan platform)
+        function getColRef(colName) {
+            if (typeof __firebase_config !== 'undefined') {
+                return db.collection('artifacts').doc(appId).collection('public').doc('data').collection(colName);
+            }
+            return db.collection(colName);
+        }
 
-        // --- DATA SEKOLAH ---
+        // =========================================================================
+        // 3. DATA SEKOLAH STATIS
+        // =========================================================================
         const SCHOOLS = [
             { id: "smkn1nabire", name: "SMKN 1 Nabire", address: "Kaliharapan (Jl. Ampera)", map: "https://maps.google.com/?q=SMKN+1+Nabire", img: "https://iili.io/BDg7six.png", majors: ["Desain Komunikasi & Visual (DKV)","Teknik Jaringan & Komputer (TJKT)", "Brokesting & Perfileman (BP)", "Agribisnis Tanaman Pangan & Hortikultura (ATPH)", "Agribisnis Tanaman Perkebunan (ATP)", "Agribisnis Ternak Unggas (ATU)", "Keperawatan Hewan", "Agribisnis Pengolahan Hasil Pertanian (APHP)", "Agribisnis Perikanan Air Tawar (APAT)"] },
             { id: "smkn1makimi", name: "SMKN 1 Makimi", address: "Legari (Jl. Marilephy)", map: "https://maps.google.com/?q=SMKN+1+Makimi", img: "https://iili.io/BiF2Otn.md.jpg", majors: ["Teknik & Bisnis Sepeda Motor (TBSM)", "Teknik Komputer & Jaringan (TKJ)", "Agribisnis Ternak Unggas (ATU)"] },
@@ -120,9 +149,12 @@
             { id: "smksyppkyoseph", name: "SMKS YPPK ST. Yoseph Calanz", address: "Karadiri", map: "https://maps.google.com/?q=SMK+ST+Yoseph+Nabire", img: "https://iili.io/BiF2oZu.md.jpg", majors: ["Agribisnis Ternak Unggas (ATU)", "Agribisnis Pengolahan Hasil Pertanian (APHP)"] }
         ];
 
+        // =========================================================================
+        // 4. STATE MANAGEMENT
+        // =========================================================================
         let state = {
             view: 'home',
-            user: JSON.parse(localStorage.getItem('user')) || null, // Sesi login admin 
+            user: JSON.parse(localStorage.getItem('user')) || null,
             registrations: JSON.parse(localStorage.getItem('registrations')) || [], 
             news: JSON.parse(localStorage.getItem('news')) || [
                 { id: "1", title: "Pembukaan PPDB 2026/2027", author: "MKKS SMK Nabire", authorId: "mkkssmknabire", content: "Pendaftaran siswa baru SMK se-Kabupaten Nabire resmi dibuka mulai hari ini.", date: "2026-02-15" }
@@ -133,22 +165,47 @@
             adminTab: 'pendaftar'
         };
 
-        // Jika menggunakan Firebase, baca data dari server secara real-time
-        if (useFirebase) {
-            db.collection("registrations").onSnapshot((snapshot) => {
-                state.registrations = [];
-                snapshot.forEach((doc) => state.registrations.push(doc.data()));
-                if (state.view !== 'daftar') render(); // Cegah gangguan saat user sedang mengisi form
+        // Sinkronisasi Firebase Real-time dengan Autentikasi
+        if (useFirebase && db && auth) {
+            // Pastikan mendengarkan snapshot hanya SETELAH user berhasil diotentikasi
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    getColRef("registrations").onSnapshot((snapshot) => {
+                        state.registrations = [];
+                        snapshot.forEach((doc) => state.registrations.push(doc.data()));
+                        if (state.view !== 'daftar') render(); // Cegah gangguan saat user sedang mengisi form
+                    }, (error) => {
+                        console.error("Gagal menarik data pendaftar:", error);
+                    });
+
+                    getColRef("news").onSnapshot((snapshot) => {
+                        state.news = [];
+                        snapshot.forEach((doc) => state.news.push(doc.data()));
+                        if (state.view !== 'daftar') render();
+                    }, (error) => {
+                        console.error("Gagal menarik data berita:", error);
+                    });
+                }
             });
 
-            db.collection("news").onSnapshot((snapshot) => {
-                state.news = [];
-                snapshot.forEach((doc) => state.news.push(doc.data()));
-                if (state.view !== 'daftar') render();
-            });
+            // Lakukan proses autentikasi (Anonymous atau Custom Token)
+            async function initAuth() {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                } catch (err) {
+                    console.error("Autentikasi gagal:", err);
+                }
+            }
+            initAuth();
         }
 
-        // --- CORE FUNCTIONS ---
+        // =========================================================================
+        // 5. CORE FUNCTIONS (UTILITIES)
+        // =========================================================================
         function toast(msg, type = 'success') {
             const container = document.getElementById('toast-container');
             const el = document.createElement('div');
@@ -172,6 +229,9 @@
             window.scrollTo(0,0);
         }
 
+        // =========================================================================
+        // 6. VIEWS / COMPONENTS RENDERER
+        // =========================================================================
         function render() {
             const container = document.getElementById('content');
             container.className = "animate-fade-in";
@@ -189,7 +249,6 @@
             }
         }
 
-        // --- VIEWS COMPONENTS ---
         function viewHome() {
             return `
                 <section class="hero-bg h-[500px] flex flex-col items-center justify-center text-center px-6">
@@ -576,7 +635,9 @@
             `;
         }
 
-        // --- HANDLERS ---
+        // =========================================================================
+        // 7. EVENT HANDLERS / LOGIC
+        // =========================================================================
         function updateMajorsDropdown(schoolName, selectedMajor = "") {
             const dropdown = document.getElementById('major-select');
             const school = SCHOOLS.find(s => s.name === schoolName);
@@ -584,7 +645,10 @@
             dropdown.innerHTML = school.majors.map(m => `<option value="${m}" ${m === selectedMajor ? 'selected' : ''}>${m}</option>`).join('');
         }
 
-        function selectSchoolForDaftar(schoolName) { state.selectedSchool = schoolName; nav('daftar'); }
+        function selectSchoolForDaftar(schoolName) { 
+            state.selectedSchool = schoolName; 
+            nav('daftar'); 
+        }
 
         async function handleDaftar(e) {
             e.preventDefault();
@@ -601,8 +665,8 @@
             try {
                 if (state.editData) {
                     // Update Mode
-                    if (useFirebase) {
-                        await db.collection("registrations").doc(state.editData.id.toString()).update(data);
+                    if (useFirebase && db) {
+                        await getColRef("registrations").doc(state.editData.id.toString()).update(data);
                     } else {
                         const idx = state.registrations.findIndex(r => r.id === state.editData.id);
                         state.registrations[idx] = { ...state.registrations[idx], ...data };
@@ -617,8 +681,8 @@
                     data.id = newId;
                     data.status = 'Menunggu'; 
                     
-                    if (useFirebase) {
-                        await db.collection("registrations").doc(newId).set(data);
+                    if (useFirebase && db) {
+                        await getColRef("registrations").doc(newId).set(data);
                     } else {
                         state.registrations.push(data);
                     }
@@ -642,7 +706,6 @@
             const user = document.getElementById('l-user').value;
             const pass = document.getElementById('l-pass').value;
 
-            // === PENGATURAN KATA SANDI BERDASARKAN NAMA SEKOLAH ===
             if (user === 'mkkssmknabire' && pass === 'mastermkks12345') {
                 state.user = { role: 'master', name: 'MKKS SMK Nabire', id: 'mkkssmknabire' };
             } 
@@ -729,8 +792,8 @@
         
         async function updateStatus(id, status) { 
             try {
-                if (useFirebase) {
-                    await db.collection("registrations").doc(id.toString()).update({ status: status });
+                if (useFirebase && db) {
+                    await getColRef("registrations").doc(id.toString()).update({ status: status });
                 } else {
                     const idx = state.registrations.findIndex(r => r.id === id);
                     state.registrations[idx].status = status;
@@ -746,8 +809,8 @@
         async function deletePendaftar(id) { 
             if (!confirm("Hapus data secara permanen?")) return; 
             try {
-                if (useFirebase) {
-                    await db.collection("registrations").doc(id.toString()).delete();
+                if (useFirebase && db) {
+                    await getColRef("registrations").doc(id.toString()).delete();
                 } else {
                     state.registrations = state.registrations.filter(r => r.id !== id);
                     saveLocalData();
@@ -759,9 +822,21 @@
             }
         }
 
-        function triggerEdit(id) { state.editData = state.registrations.find(r => r.id === id); nav('daftar'); }
-        function cancelEdit() { state.editData = null; nav('admin'); }
-        function setAdminTab(tab) { state.adminTab = tab; state.editNewsData = null; render(); }
+        function triggerEdit(id) { 
+            state.editData = state.registrations.find(r => r.id === id); 
+            nav('daftar'); 
+        }
+        
+        function cancelEdit() { 
+            state.editData = null; 
+            nav('admin'); 
+        }
+        
+        function setAdminTab(tab) { 
+            state.adminTab = tab; 
+            state.editNewsData = null; 
+            render(); 
+        }
 
         async function handleNewsSubmit(e) {
             e.preventDefault();
@@ -776,8 +851,8 @@
                         return;
                     }
 
-                    if (useFirebase) {
-                        await db.collection("news").doc(state.editNewsData.id.toString()).update({ title: data.title, content: data.content });
+                    if (useFirebase && db) {
+                        await getColRef("news").doc(state.editNewsData.id.toString()).update({ title: data.title, content: data.content });
                     } else {
                         state.news[idx] = { ...state.news[idx], title: data.title, content: data.content };
                         saveLocalData();
@@ -797,8 +872,8 @@
                         date: new Date().toISOString().split('T')[0]
                     };
                     
-                    if (useFirebase) {
-                        await db.collection("news").doc(newId).set(newsData);
+                    if (useFirebase && db) {
+                        await getColRef("news").doc(newId).set(newsData);
                     } else {
                         state.news.push(newsData);
                         saveLocalData();
@@ -825,8 +900,8 @@
             }
             if (!confirm("Hapus berita ini dari database?")) return;
             try {
-                if (useFirebase) {
-                    await db.collection("news").doc(id.toString()).delete();
+                if (useFirebase && db) {
+                    await getColRef("news").doc(id.toString()).delete();
                 } else {
                     state.news = state.news.filter(n => n.id !== id);
                     saveLocalData();
@@ -838,7 +913,10 @@
             }
         }
 
-        function cancelNewsEdit() { state.editNewsData = null; render(); }
+        function cancelNewsEdit() { 
+            state.editNewsData = null; 
+            render(); 
+        }
 
         function searchTable(q) {
             const rows = document.querySelectorAll('#data-table tbody tr');
@@ -854,7 +932,10 @@
             XLSX.writeFile(wb, `PPDB_NABIRE_${new Date().getFullYear()}.xlsx`);
         }
 
-        render(); // Panggil fungsi render agar tampilan muncul
+        // =========================================================================
+        // 8. RENDER PERTAMA KALI SAAT HALAMAN DIBUKA
+        // =========================================================================
+        render();
     </script>
 </body>
 </html>
